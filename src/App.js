@@ -9,7 +9,6 @@ import batCSV from "./bat.csv";
 import * as d3 from "d3";
 import {groupBy, buildStats, filterByEquality} from './Utils.js';
 
-
 class App extends Component {
     constructor(props) {
       super(props);
@@ -31,73 +30,36 @@ class App extends Component {
         },
         data: this.props.data, // raw data
         inputSpec : {
-          Yes : true,
-          No : true,
+          inducted : {
+            Yes : false,
+            No : false,
+          },
+          Stat : 'HR',
         },
         plotData: null, // data for plotting
       }
       this.filterData = this.filterData.bind(this);
+      this.handleDropDownChange = this.handleDropDownChange.bind(this);
     }
 
     componentDidMount() {
       // any attribute other than this.state can be added at any time!
       console.log("component did mount, will run filterdata");
-      this.filterData(this.state.inputSpec, this.state.data);
+      this.filterData(this.state.inputSpec.inducted, this.state.data);
     }
 
   componentDidUpdate() {
-    console.log("update on App: ", this.state.inputSpec);
-    //console.log("plotdata after componentDidUpdate: ", this.state.plotData);
+    console.log("update on App: ", this.state.inputSpec.inducted);
   }
 
-/*
-  filterData() {
-      let filteredData = [];
-      if (this.state.inputSpec.Yes != null) {
-          filteredData = filteredData.concat(filterByEquality(this.state.data, 'inducted', 'Y'));
-      }
-      console.log(filteredData.length);
-      if (this.state.inputSpec.No != null) {
-          filteredData = filteredData.concat(filterByEquality(this.state.data, 'inducted', 'N'));
-      }
-      console.log(filteredData.length);
-    //}
-    const dict = groupBy(filteredData, 'playerID');
-    //const dict = groupBy(this.state.data, 'playerID');
-    const lineData = [];
-    Object.keys(dict)
-      .forEach(key => {
-        var sumH = 0;
-        var sumHR = 0;
-        for (var i = 0 ; i < dict[key].length; i++) {
-            sumH += Number(dict[key][i]['H']);
-            sumHR += Number(dict[key][i]['HR']);
-            dict[key][i]['cumH'] = sumH;
-            dict[key][i]['cumHR'] = sumHR;
-      }
-    })
-
-    Object.keys(dict)
-          .forEach(key => {
-            lineData.push({
-              playerID: key,
-              data: dict[key]
-            });
-          });
-
-    console.log('lineData', lineData);
-    this.state.plotData = lineData;
-  }
-*/
-
-  filterData(inputSpec, data)  {
+  filterData(inducted, data)  {
       console.log("filterdata run");
       let filteredData = [];
-      if (inputSpec.Yes != null) {
+      if (inducted.Yes != null) {
           filteredData = filteredData.concat(filterByEquality(data, 'inducted', 'Y'));
       }
       console.log(filteredData.length);
-      if (inputSpec.No != null) {
+      if (inducted.No != null) {
           filteredData = filteredData.concat(filterByEquality(data, 'inducted', 'N'));
       }
       console.log(filteredData.length);
@@ -134,6 +96,15 @@ class App extends Component {
 
   }
 
+  handleDropDownChange(chosenStat) {
+    // to handle nested updates: check the below post
+    //https://stackoverflow.com/questions/43040721/how-to-update-nested-state-properties-in-react
+    var inputSpec = this.state.inputSpec;
+    console.log("inputSpec", inputSpec);
+    inputSpec.Stat = chosenStat;
+    console.log("inputSpec after changing stat", inputSpec);
+    this.setState({inputSpec: inputSpec});
+  }
 /*
 
 */
@@ -148,7 +119,8 @@ class App extends Component {
         <Inputs inputSpec={this.state.inputSpec}
                 data={this.state.data}
                 plotData={this.state.plotData}
-                handleClick={this.filterData}/>
+                handleClick={this.filterData}
+                handleChange={this.handleDropDownChange}/>
 
       </div>
     );

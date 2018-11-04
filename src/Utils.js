@@ -14,9 +14,12 @@ export function groupBy(data, accessorKey) {
 };
 
 export function filterByEquality(data, accessorKey, value) {
+  //console.log("data:" , data);
   const newData = [];
   data.forEach((elem) => {
+    //console.log(elem[accessorKey], value);
     if (elem[accessorKey] == value) {
+      //console.log("pushed");
       newData.push(elem);
     }
   })

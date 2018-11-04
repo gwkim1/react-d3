@@ -6,16 +6,10 @@ import batCSV from './bat.csv'
 // Had to install d3 v4, originally it was v5 which failed to get the data
 
 class LineChart extends Component {
-
   constructor(props) {
     super(props);
-    ////console.log("props", props);
-    /*
-    this.state = {
-      xScale : null,
-      yScale: null,
-    }
-    */
+    //this.handleMouseOver = this.handleMouseOver.bind(this);
+    //this.handleMouseOut = this.handleMouseOut.bind(this);
   }
 
   componentDidMount() {
@@ -23,37 +17,18 @@ class LineChart extends Component {
   }
 
   componentDidUpdate() {
-    ////console.log("linechart got updated! this.props.plotData: ", this.props.plotData.length);
-    //console.log("linechart got updated! this.props.inputSpec: ", this.props.inputSpec);
-
     this.drawChart();
   }
-/*
-  componentWillReceiveProps(nextprops) {
-    if (nextprops.inputSpec.Yes != this.props.inputSpec.Yes) {
-      //console("called!");
-      this.drawChart();
-    }
-*/
-    //chttps://bl.ocks.org/johnnygizmo/3d593d3bf631e102a2dbee64f62d9de4
-    // var's try a D3 apporach instead of a React approach.
-  //}
-/*
-  componentDidMount() {
-    this.intervalId = setInterval(this.drawChart.bind(this), 1000);
-  }
-  componentWillUnmount(){
-    clearInterval(this.intervalId);
-  }
-*/
 
   handleMouseOver(d, i) {
-    d3.select(this).transition().duration(500).attr('stroke-width', '4.0');
+    // conflict between this being ev and this being something different.
+    d3.select(this)
+      //.transition().duration(500)
+      .attr('stroke-width', '4.0');
 
     var p = d3.select("#lineChart")
         .append("p");
-
-    p.transition().duration(500)
+    p //.transition().duration(200)
         .attr("class", "tooltip")
         .style("height", 200).style("width", 200)
         .style("opacity", 0.8)
@@ -61,120 +36,64 @@ class LineChart extends Component {
         .style("background-color", 'yellow')
         .style("left", d3.event.pageX + 'px')
         .style("top", d3.event.pageY+ 'px')
-        // <br> doesn't work in svg
-        .text(d.data[0].name + " " + d.data[d.data.length-1].cumHR);
-        //.text("<tspan>" + d.data[0].name + "</tspan>" +
-        //      "<tspan>" + d.data[d.data.length-1].cumHR + "</tspan>");
-/*
-    div
-        .html(d.data[0].name + "<br>" + d.data[d.data.length-1].cumHR)
-        .style("left", d3.event.pageX + 'px')
-        .style("top", d3.event.pageY+ 'px')
-        .style("height", 200).style("width", 200);
-
-
-
-        var div = d3.select("#lineChart")
-            .append("div")
-            .attr("class", "tooltip")
-            .style("height", 200).style("width", 200)
-            .style("opacity", 0.5)
-            .style("position", "absolute")
-            .style("background-color", 'red');
-            div.html(d.data[0].name + "<br>" + d.data[d.data.length-1].cumHR)
-            .style("left", d3.event.pageX + 'px')
-            .style("top", d3.event.pageY+ 'px')
-            .style("height", 200).style("width", 200);
-*/
-/*
-    d3.select(this.parentNode).append('text')
-    .attr("font-size", '40px')
-    .attr('x', 20).attr('y', 20)
-    .attr('fill', '#000')
-    .text("hello");
-*/
-/*
-    console.log("d, i:", d, i, d.data[d.data.length-1]);
-    d3.select(this.parentNode).append('text')
-    .attr("font-size", '14px')
-    .attr('x', d3.event.pageX)
-    .attr('y', d3.event.pageY)
-    //.attr('x', this.state.xScale(d.yearID))
-    //.attr('y', this.state.yScale(d.data[d.data.length-1]))
-    .attr('fill', '#000')
-    .text(d.data[d.data.length-1].cumHR);
-*/
-
-    //d3.select('#lineChart').html("Hello");
-
-    //.text(d => d);
-
-    //console.log("selection of svg: ", d3.select("#lineChart").select('svg'));
-/*
-    d3.select("#lineChart").select('svg').append('text')
-      .attr({
-        id: i,  // Create an id for text so we can select it later for removing on mouseout
-         x: 20,
-         y: 20,
-      })
-      .text("Hello again"); */
+        //
+        .text(d.data[0].name + " " + d.data[d.data.length-1].cumStat);
   }
 
   handleMouseOut(d, i) {
     d3.select(this).attr('stroke-width', '1.5');
-
+    console.log("this selected in mouseout", d3.select(this)._groups[0]);
     // remove the diff for popup window
     var tooltip =  d3.select("p.tooltip");
+    console.log("tooltip", tooltip);
     var textToRemove = tooltip._groups[0][0].innerText;
-    tooltip.transition().remove();
+    tooltip
+      //.transition().duration(100)
+      .remove();
     console.log(textToRemove, "removed");
     //d3.select(".tooltip").remove();
     //console.log(this.parentNode);
   }
 
   drawChart() {
-      ////console.log("nextprops", nextprops);
+    var stat = this.props.inputSpec.Stat;
+    var cumStat = 'cumStat';
       //if (nextprops != null) {
         var filteredData = [];
         //console.log("At Linechart, inputSpec:", this.props.inputSpec);
         //console.log("at Linechart, data: ", this.props.data);
-        if (this.props.inputSpec.Yes ) {
+        if (this.props.inputSpec.inducted.Yes ) {
             filteredData = filteredData.concat(filterByEquality(this.props.data, 'inducted', 'Y'));
         }
         ////console.log(filteredData.length);
-        if (this.props.inputSpec.No ) {
+        if (this.props.inputSpec.inducted.No ) {
             filteredData = filteredData.concat(filterByEquality(this.props.data, 'inducted', 'N'));
             ////console.log("filtered by N:", filterByEquality(this.props.data, 'inducted', 'N'));
         }
-      //console.log("LineChart.drawchart, data length", filteredData.length);
+      //console.log("LineChart.drawchart, data length", filteredData.length, this.props.data.length);
       //}
       var dict = groupBy(filteredData, 'playerID');
       //var dict = groupBy(this.props.data, 'playerID');
       var lineData = [];
       Object.keys(dict)
         .forEach(key => {
-          var sumH = 0;
-          var sumHR = 0;
+          var sumStat = 0;
           for (var i = 0 ; i < dict[key].length; i++) {
-              sumH += Number(dict[key][i]['H']);
-              sumHR += Number(dict[key][i]['HR']);
-              dict[key][i]['cumH'] = sumH;
-              dict[key][i]['cumHR'] = sumHR;
+              sumStat += Number(dict[key][i][stat]);
+              dict[key][i][cumStat] = sumStat;
         }
       })
 
-      var hrStats = buildStats(this.props.data, 'cumHR');
-      var hStats = buildStats(this.props.data, 'cumH');
+      console.log("data built:", dict);
+
+      var stats = buildStats(this.props.data, cumStat);
       var yearStats = buildStats(this.props.data, 'yearID');
 
       var xScale = d3.scaleLinear().domain([yearStats.min, yearStats.max])
                        .range([0, this.props.chartSpec.plotWidth]);
 
-
-      var yScale = d3.scaleLinear().domain([0, hrStats.max])
+      var yScale = d3.scaleLinear().domain([0, stats.max])
                        .range([this.props.chartSpec.plotHeight - this.props.chartSpec.margin.bottom, 0]);
-
-      //this.setState({xScale: xScale, yScale: yScale});
 
       Object.keys(dict)
             .forEach(key => {
@@ -188,7 +107,7 @@ class LineChart extends Component {
       ////console.log('lineData', lineData);
 
       var lineEval = d3.line().x(d => xScale(Number(d.yearID)))
-                           .y(d => yScale(Number(d.cumHR)));
+                           .y(d => yScale(Number(d[cumStat])));
 
       // this works perfectly, adding filtered plots
       // but very non-D3 solution I guess. you just remove each svg
