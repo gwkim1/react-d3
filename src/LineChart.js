@@ -10,6 +10,16 @@ class LineChart extends Component {
     super(props);
     //this.handleMouseOver = this.handleMouseOver.bind(this);
     //this.handleMouseOut = this.handleMouseOut.bind(this);
+
+    var yearStats = buildStats(this.props.data, 'yearID');
+    var xScale = d3.scaleLinear().domain([yearStats.min, yearStats.max])
+                     .range([0, this.props.chartSpec.plotWidth]);
+    var yScale = d3.scaleLinear().domain([0, 100]) // arbitrary
+                     .range([this.props.chartSpec.plotHeight - this.props.chartSpec.margin.bottom, 0]);
+    this.state = {
+      xScale: xScale,
+      yScale: yScale,
+    }
   }
 
   componentDidMount() {
@@ -24,7 +34,10 @@ class LineChart extends Component {
     // conflict between this being ev and this being something different.
     d3.select(this)
       //.transition().duration(500)
-      .attr('stroke-width', '4.0');
+      .attr('stroke-width', '4.0')
+      .attr('opacity', '1.0');
+
+      console.log("this in handleMouseOver:", this);
 
     var p = d3.select("#lineChart")
         .append("p");
@@ -37,12 +50,21 @@ class LineChart extends Component {
         .style("left", d3.event.pageX + 'px')
         .style("top", d3.event.pageY+ 'px')
         //
-        .text(d.data[0].name + " " + d.data[d.data.length-1].cumStat);
+        .style("white-space", "pre") // what a hack..
+        .text(d.data[0].name + "\n"
+            + "total HRs: " + d.data[d.data.length-1].cumStat + "\n");
+
+            console.log("p:", p);
+        //.text(d.data[0].name)
+        // + " + d.data[d.data.length-1].cumStat +
+        //      " " + d3.event.pageX + " " + d3.event.pageY); // +
+
+              //" " + this.state.yScale(1908) );
   }
 
   handleMouseOut(d, i) {
-    d3.select(this).attr('stroke-width', '1.5');
-    console.log("this selected in mouseout", d3.select(this)._groups[0]);
+    d3.select(this).attr('stroke-width', '1.5').attr('opacity', '0.3');
+    //console.log("this selected in mouseout", d3.select(this)._groups[0]);
     // remove the diff for popup window
     var tooltip =  d3.select("p.tooltip");
     console.log("tooltip", tooltip);
@@ -84,16 +106,18 @@ class LineChart extends Component {
         }
       })
 
-      console.log("data built:", dict);
+      //console.log("data built:", dict);
 
       var stats = buildStats(this.props.data, cumStat);
       var yearStats = buildStats(this.props.data, 'yearID');
 
       var xScale = d3.scaleLinear().domain([yearStats.min, yearStats.max])
                        .range([0, this.props.chartSpec.plotWidth]);
-
+                      //.range([this.props.chartSpec.margin.left, this.props.chartSpec.plotWidth + this.props.chartSpec.margin.left]);
       var yScale = d3.scaleLinear().domain([0, stats.max])
                        .range([this.props.chartSpec.plotHeight - this.props.chartSpec.margin.bottom, 0]);
+                       //.range([this.props.chartSpec.plotHeight, 0]);
+      //this.setState({yScale: yScale}); // this returns error. infinite loop prevention
 
       Object.keys(dict)
             .forEach(key => {
@@ -114,8 +138,11 @@ class LineChart extends Component {
       // and try to draw a new one.
       d3.select('#lineChart').select("svg").remove();
       var svg = d3.select('#lineChart').append("svg")
-                    .attr('height', this.props.chartSpec.height)
-                    .attr('width', this.props.chartSpec.width);
+        .attr("transform", "translate(" +
+              this.props.chartSpec.margin.left + "," +
+              this.props.chartSpec.margin.top + ")")
+        .attr('height', this.props.chartSpec.height)
+        .attr('width', this.props.chartSpec.width);
 
       // Note that this is different from the svg selection itself!
       // bind data to g, which would have path as its child
@@ -130,7 +157,9 @@ class LineChart extends Component {
       texts.enter().append("text")
         .attr("d", d=>d);
 */
-      console.log(lineData);
+
+      var leftMargin = this.props.chartSpec.margin.left;
+      var topMargin = this.props.chartSpec.margin.top;
       var paths = gs.enter().append('g').append('path')
           //.merge(svg)
           .attr('stroke-width', '1.5')
@@ -138,12 +167,53 @@ class LineChart extends Component {
           .attr("class", "line")
           .attr('fill', 'none')
           .attr("d", d=>lineEval(d.data))
+          .attr("opacity", '0.3')
+          // so one mouseover fn has to deal with this = event.
+          // but I also wanted d3 to use this.yScale, where this = linechart.
+          // solution: use different namespaces for the two mouseovers.
+          .on("mouseover.tooltip", this.handleMouseOver)
+          .on("mouseover.test", function() {
+            var textToUpdate = d3.select(".tooltip")._groups[0][0].innerText;
+            console.log("pageX, pageY:", d3.event.pageX, d3.event.pageY);
+            Math.round(xScale.invert(d3.event.pageX - 30))
 
-          //.on("mouseover", tip.show)
-          //.on("mouseout", tip.hide);
-          .on("mouseover", this.handleMouseOver)
+            var stat = Math.round(yScale.invert(d3.event.pageY - topMargin));
+            var year = Math.round(xScale.invert(d3.event.pageX - leftMargin));
+
+            d3.select(".tooltip").text(textToUpdate + "\n" + stat + " HRs in " + year);
+            //console.log("this is:", d3.select(".tooltip").text(textToUpdate + yScale.invert(d3.event.pageY)));
+          })
           .on("mouseout", this.handleMouseOut)
           .on("click", this.handleMouseClick);
+
+//https://d3-legend.susielu.com/#summary
+// use this for legend?
+// or I can just try creating a legend..
+
+// ugh.. very elementary addition of legend. need to fix this.
+  var legend = d3.select('#lineChart').select("svg")
+  .append("g").attr("class", "legend");
+
+  var colors = ['blue', 'red'];
+
+  legend.selectAll('rect')
+  .data(['Yes', 'No'])
+  .enter().append('rect')
+  .attr('x', 50)
+  .attr('y', (d, i) => 30*i)
+  .attr('width', 15)
+  .attr('height', 15)
+  .style('fill', (d, i) => colors[i]);
+
+  legend.selectAll('text')
+  .data(['Yes', 'No'])
+  .enter().append('text')
+  .attr('x', 50 + 50)
+  .attr('y', (d, i) => 30*(i+1) - 20)
+  .text(d => d);
+
+
+    /*
       var texts = gs.enter().append('text')
         .attr("font-size", '40px')
         .attr('x', d => xScale(Number(d.data[0].cumHR)))
@@ -151,7 +221,7 @@ class LineChart extends Component {
         .attr('fill', '#000')
         .text("hello");
       console.log('texts', texts);
-
+    */
       var xAxis = d3.axisBottom(xScale);
       var yAxis = d3.axisRight(yScale);
 

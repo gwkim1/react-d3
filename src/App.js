@@ -13,26 +13,27 @@ class App extends Component {
     constructor(props) {
       super(props);
 
-      const height = 700;
-      const width = height * 2;
+      //
+      const plotHeight = 700;
+      const plotWidth = plotHeight * 2;
       const margin = {top: 30, left: 30, right: 30, bottom: 30};
       this.state = {
         dataFileName: "bat.csv",
-        width: 300,
-        height: 500,
+        //width: 300,
+        //height: 500,
         id: "root",
         chartSpec: {
-          height: height,
-          width: width,
+          height: plotHeight + margin.top + margin.bottom,
+          width: plotWidth + margin.left + margin.right,
           margin: margin,
-          plotHeight: height-margin.top-margin.bottom,
-          plotWidth: width-margin.left-margin.right,
+          plotHeight: plotHeight,
+          plotWidth: plotWidth,
         },
         data: this.props.data, // raw data
         inputSpec : {
           inducted : {
-            Yes : false,
-            No : false,
+            Yes : true,
+            No : true,
           },
           Stat : 'HR',
         },
